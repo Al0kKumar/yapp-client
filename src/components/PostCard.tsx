@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { MoreHorizontal, Heart, MessageCircle, Reply } from 'lucide-react';
+import { MoreHorizontal, Heart, MessageCircle, Reply, ArrowLeft, Camera } from 'lucide-react';
 
 const PostCard = ({ post }) => {
+  const navigate = useNavigate();
   const [isLiked, setIsLiked] = useState(false);
   const [isYapped, setIsYapped] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -17,6 +18,10 @@ const PostCard = ({ post }) => {
   const [comments, setComments] = useState(post.comments || []);
   const [newComment, setNewComment] = useState('');
   const [replyText, setReplyText] = useState('');
+  const [commentLikes, setCommentLikes] = useState({});
+  const [commentYapps, setCommentYapps] = useState({});
+  const [replyLikes, setReplyLikes] = useState({});
+  const [replyYapps, setReplyYapps] = useState({});
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -32,6 +37,34 @@ const PostCard = ({ post }) => {
     setShowComments(!showComments);
   };
 
+  const handleCommentLike = (commentId) => {
+    setCommentLikes(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }));
+  };
+
+  const handleCommentYapp = (commentId) => {
+    setCommentYapps(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }));
+  };
+
+  const handleReplyLike = (replyId) => {
+    setReplyLikes(prev => ({
+      ...prev,
+      [replyId]: !prev[replyId]
+    }));
+  };
+
+  const handleReplyYapp = (replyId) => {
+    setReplyYapps(prev => ({
+      ...prev,
+      [replyId]: !prev[replyId]
+    }));
+  };
+
   const addComment = () => {
     if (newComment.trim()) {
       const comment = {
@@ -40,7 +73,9 @@ const PostCard = ({ post }) => {
         user: 'You',
         avatar: '',
         timestamp: 'now',
-        replies: []
+        replies: [],
+        likes: 0,
+        yapps: 0
       };
       setComments([...comments, comment]);
       setNewComment('');
@@ -57,7 +92,9 @@ const PostCard = ({ post }) => {
               id: Date.now(),
               text: replyText,
               user: 'You',
-              timestamp: 'now'
+              timestamp: 'now',
+              likes: 0,
+              yapps: 0
             }]
           };
         }
@@ -163,21 +200,48 @@ const PostCard = ({ post }) => {
 
             {showComments && (
               <div className="mt-4 space-y-4">
-                <div className="flex space-x-2">
-                  <Input
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Write a comment..."
-                    className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-purple-400"
-                    onKeyPress={(e) => e.key === 'Enter' && addComment()}
-                  />
-                  <Button 
-                    onClick={addComment}
+                <div className="flex items-center space-x-2 mb-4">
+                  <Button
+                    onClick={() => setShowComments(false)}
+                    variant="ghost"
                     size="sm"
-                    className="bg-purple-500 hover:bg-purple-600 text-white"
+                    className="text-gray-400 hover:text-white hover:bg-white/10"
                   >
-                    Post
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    Back
                   </Button>
+                </div>
+
+                <div className="flex space-x-2">
+                  <Avatar className="w-8 h-8">
+                    <AvatarFallback className="bg-gradient-to-tr from-purple-400 to-blue-400 text-white text-xs">
+                      Y
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Write a comment..."
+                      className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-purple-400"
+                      onKeyPress={(e) => e.key === 'Enter' && addComment()}
+                    />
+                    <div className="flex space-x-2">
+                      <Button 
+                        onClick={addComment}
+                        size="sm"
+                        className="bg-purple-500 hover:bg-purple-600 text-white"
+                      >
+                        Post
+                      </Button>
+                      <label className="cursor-pointer">
+                        <input type="file" accept="image/*" className="hidden" />
+                        <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-white/10">
+                          <Camera className="w-4 h-4" />
+                        </Button>
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -195,16 +259,47 @@ const PostCard = ({ post }) => {
                             <span className="text-white font-medium text-sm">{comment.user}</span>
                             <span className="text-gray-400 text-xs">{comment.timestamp}</span>
                           </div>
-                          <p className="text-gray-100 text-sm">{comment.text}</p>
-                          <Button
-                            onClick={() => setShowReplyTo(showReplyTo === comment.id ? null : comment.id)}
-                            variant="ghost"
-                            size="sm"
-                            className="text-gray-400 hover:text-blue-400 text-xs mt-1 h-auto p-1"
-                          >
-                            <Reply className="w-3 h-3 mr-1" />
-                            Reply
-                          </Button>
+                          <p className="text-gray-100 text-sm mb-2">{comment.text}</p>
+                          
+                          <div className="flex items-center space-x-4">
+                            <Button
+                              onClick={() => handleCommentLike(comment.id)}
+                              variant="ghost"
+                              size="sm"
+                              className="flex items-center space-x-1 hover:bg-red-500/20 transition-all duration-300 h-auto p-1"
+                            >
+                              <Heart 
+                                className={`w-3 h-3 ${
+                                  commentLikes[comment.id] ? 'fill-red-500 text-red-500' : 'text-gray-400'
+                                }`} 
+                              />
+                              <span className={`text-xs ${commentLikes[comment.id] ? 'text-red-500' : 'text-gray-400'}`}>
+                                {(comment.likes || 0) + (commentLikes[comment.id] ? 1 : 0)}
+                              </span>
+                            </Button>
+
+                            <Button
+                              onClick={() => handleCommentYapp(comment.id)}
+                              variant="ghost"
+                              size="sm"
+                              className="flex items-center space-x-1 hover:bg-green-500/20 transition-all duration-300 h-auto p-1"
+                            >
+                              <span className={`text-sm ${commentYapps[comment.id] ? 'text-green-400' : 'text-gray-400'}`}>🔄</span>
+                              <span className={`text-xs ${commentYapps[comment.id] ? 'text-green-400' : 'text-gray-400'}`}>
+                                {(comment.yapps || 0) + (commentYapps[comment.id] ? 1 : 0)}
+                              </span>
+                            </Button>
+
+                            <Button
+                              onClick={() => setShowReplyTo(showReplyTo === comment.id ? null : comment.id)}
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-400 hover:text-blue-400 text-xs h-auto p-1"
+                            >
+                              <Reply className="w-3 h-3 mr-1" />
+                              Reply
+                            </Button>
+                          </div>
                         </div>
                       </div>
 
@@ -220,27 +315,72 @@ const PostCard = ({ post }) => {
                               <span className="text-white font-medium text-xs">{reply.user}</span>
                               <span className="text-gray-400 text-xs">{reply.timestamp}</span>
                             </div>
-                            <p className="text-gray-100 text-xs">{reply.text}</p>
+                            <p className="text-gray-100 text-xs mb-2">{reply.text}</p>
+                            
+                            <div className="flex items-center space-x-3">
+                              <Button
+                                onClick={() => handleReplyLike(reply.id)}
+                                variant="ghost"
+                                size="sm"
+                                className="flex items-center space-x-1 hover:bg-red-500/20 transition-all duration-300 h-auto p-0.5"
+                              >
+                                <Heart 
+                                  className={`w-2.5 h-2.5 ${
+                                    replyLikes[reply.id] ? 'fill-red-500 text-red-500' : 'text-gray-400'
+                                  }`} 
+                                />
+                                <span className={`text-xs ${replyLikes[reply.id] ? 'text-red-500' : 'text-gray-400'}`}>
+                                  {(reply.likes || 0) + (replyLikes[reply.id] ? 1 : 0)}
+                                </span>
+                              </Button>
+
+                              <Button
+                                onClick={() => handleReplyYapp(reply.id)}
+                                variant="ghost"
+                                size="sm"
+                                className="flex items-center space-x-1 hover:bg-green-500/20 transition-all duration-300 h-auto p-0.5"
+                              >
+                                <span className={`text-xs ${replyYapps[reply.id] ? 'text-green-400' : 'text-gray-400'}`}>🔄</span>
+                                <span className={`text-xs ${replyYapps[reply.id] ? 'text-green-400' : 'text-gray-400'}`}>
+                                  {(reply.yapps || 0) + (replyYapps[reply.id] ? 1 : 0)}
+                                </span>
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
 
                       {showReplyTo === comment.id && (
                         <div className="ml-10 flex space-x-2">
-                          <Input
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            placeholder="Write a reply..."
-                            className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-purple-400 text-sm"
-                            onKeyPress={(e) => e.key === 'Enter' && addReply(comment.id)}
-                          />
-                          <Button 
-                            onClick={() => addReply(comment.id)}
-                            size="sm"
-                            className="bg-purple-500 hover:bg-purple-600 text-white text-xs"
-                          >
-                            Reply
-                          </Button>
+                          <Avatar className="w-6 h-6">
+                            <AvatarFallback className="bg-gradient-to-tr from-purple-400 to-blue-400 text-white text-xs">
+                              Y
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 space-y-2">
+                            <Input
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              placeholder="Write a reply..."
+                              className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-purple-400 text-sm"
+                              onKeyPress={(e) => e.key === 'Enter' && addReply(comment.id)}
+                            />
+                            <div className="flex space-x-2">
+                              <Button 
+                                onClick={() => addReply(comment.id)}
+                                size="sm"
+                                className="bg-purple-500 hover:bg-purple-600 text-white text-xs"
+                              >
+                                Reply
+                              </Button>
+                              <label className="cursor-pointer">
+                                <input type="file" accept="image/*" className="hidden" />
+                                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-white/10">
+                                  <Camera className="w-3 h-3" />
+                                </Button>
+                              </label>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
